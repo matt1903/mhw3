@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Github Repository Info</title>
+</head>
+<body>
+    <h1>Github Repository Info</h1>
+    <input type="text" id="repoInput" placeholder="Inserisci il nome della repository">
+    <button onclick="authenticateAndFetch()">Visualizza informazioni</button>
+
+    <script>
+        async function authenticateAndFetch() {
+            const clientId = 'Ov23liusbdxltGZ0ZzmJ';
+            const clientSecret = '30cda35296aa801528c1c015705706d481f5dbfe';
+            const redirectUri = 'http://localhost:80/hw3/callback-git.html'; // Assicurati di registrare questo URI su GitHub
+
+            const repoName = document.getElementById('repoInput').value;
+
+            // Fase 1: Autenticazione OAuth - Reindirizza l'utente a GitHub per l'autorizzazione
+            const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=repo`;
+
+            window.location.href = authUrl;
+
+            // Dopo il reindirizzamento, GitHub invierÃ un 'code' al redirect URI specificato
+
+            // Fase 2: Scambio di 'code' per 'access_token'
+            const code = new URLSearchParams(window.location.search).get('code');
+
+            const tokenResponse = await fetch(`https://github.com/login/oauth/access_token`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    client_id: clientId,
+                    client_secret: clientSecret,
+                    code: code,
+                    redirect_uri: redirectUri
+                })
+            });
+
+            const tokenData = await tokenResponse.json();
+            const accessToken = tokenData.access_token;
+
+            // Fase 3: Richiesta API per ottenere informazioni sulla repository
+            const repoResponse = await fetch(`https://api.github.com/repos/${repoName}`, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            });
+
+            if (!repoResponse.ok) {
+                throw new Error('Errore durante la richiesta delle informazioni sulla repository');
+            }
+
+            const repoData = await repoResponse.json();
+            console.log('Informazioni sulla repository:', repoData);
+            alert(`Nome: ${repoData.full_name}\nDescrizione: ${repoData.description}\nURL: ${repoData.html_url}`);
+        }
+    </script>
+</body>
+</html>
